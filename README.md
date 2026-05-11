@@ -14,22 +14,53 @@ Use case: you run `claude` on your home/work machine. You want to drive it from 
 
 External access is provided by **a tunnel of your choice** (Tailscale, Cloudflare Tunnel, frp). The daemon does no TLS termination on its own — that is the tunnel's job. See `SECURITY.md`.
 
+## Install from source
+
+This project is **not yet published to npm**, and `npm install -g github:<owner>/claude-remote-free` is known to mis-run `node-pty`'s postinstall in global mode. The reliable install path is:
+
+```bash
+git clone https://github.com/anfernee-kwan/claude-remote-free.git
+cd claude-remote-free
+npm install
+npm run build
+# now use either of:
+node bin/claude-remote-free.js start
+npm link        # exposes `claude-remote-free` on your PATH
+```
+
+### Supported Node versions
+
+- **Node 20 LTS, 22 LTS, 24 Current**: prebuilt `node-pty` binaries work out of the box.
+- **Node 25+**: `node-pty@1.1.0`'s prebuilt `.node` files were compiled against older Node ABIs. The native module will load but call `forkpty(3)` with a layout the new ABI doesn't honor, surfacing as `posix_spawnp failed` once the daemon starts. Rebuild from source after `npm install`:
+
+  ```bash
+  npm run rebuild-pty   # delegates to: cd node_modules/node-pty && npx node-gyp rebuild
+  ```
+
+  You'll need a working C/C++ toolchain (`xcode-select --install` on macOS; `build-essential` + `python3` on Debian/Ubuntu).
+
+If you don't know which case you fall into, run `node --version`. Anything `<25` should "just work"; `>=25` needs the rebuild step.
+
 ## Quick start
+
+After installing from source, from the repo root:
 
 ```bash
 # foreground, fresh claude session, http://127.0.0.1:7878
-npx -y claude-remote-free start
+node bin/claude-remote-free.js start
 
 # detach into background, also start a Cloudflare quick tunnel for public access
-npx -y claude-remote-free start --detach --tunnel cloudflare
+node bin/claude-remote-free.js start --detach --tunnel cloudflare
 ```
+
+(`npx claude-remote-free ...` will work the day this lands on npm; until then, use the source path or `npm link` it onto your PATH.)
 
 The first run writes a config file at `~/.config/claude-remote-free/config.json` containing a 32-byte random login token. The token is printed to stdout the first time the daemon starts. Open the URL it prints, paste the token, and you're in.
 
 To stop:
 
 ```bash
-npx -y claude-remote-free stop
+node bin/claude-remote-free.js stop
 ```
 
 ## As a Claude Code plugin
@@ -184,15 +215,31 @@ claude-remote-free attach -- <cmd> [args...]
 - `~/.local/state/claude-remote-free/daemon.log`
 - `~/.local/state/claude-remote-free/attach.sock` (wrapper mode only)
 
-## Building from source
+## Troubleshooting
+
+### `posix_spawnp failed` on Node 25+ (macOS arm64 and others)
+
+Symptom: the daemon prints `posix_spawnp failed` repeatedly as soon as it tries to spawn `claude`.
+
+Cause: `node-pty@1.1.0` ships prebuilt `.node` binaries (`node_modules/node-pty/prebuilds/<platform>/pty.node`) compiled against the ABI of older Node releases. Node 25 loads them but the native call shape no longer matches. The library's README explicitly notes that supported Node versions "mostly track whatever VS Code uses," so non-LTS Current releases lag.
+
+Fix:
 
 ```bash
-npm install
-npm run build      # tsc + esbuild; web/dist is committed for npx users
-npm start          # foreground daemon
+npm run rebuild-pty
 ```
 
-`web/dist` is checked into the repo so `npx claude-remote-free` works with zero build step.
+That delegates to `cd node_modules/node-pty && npx node-gyp rebuild` and produces a fresh `build/Release/pty.node` against the running Node. Requires a working C/C++ toolchain.
+
+Long-term: upgrade `node-pty` once a stable release with refreshed prebuilds for Node 25 ships, or pin Node to 20/22/24 LTS for production hosts.
+
+### `npm install -g github:<owner>/claude-remote-free` doesn't work
+
+Known issue with native-module postinstall in global installs. Until this repo is published to npm, use the from-source install path above. `npm link` after a local install gives you the same `claude-remote-free` command on your `PATH` without the global postinstall pitfall.
+
+### Cloudflare Quick Tunnel returns 500 intermittently
+
+That's a `trycloudflare.com` service-side issue, not a daemon bug. Retry, or move to a named Cloudflare tunnel or Tailscale.
 
 ## License
 
