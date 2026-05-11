@@ -100,7 +100,40 @@ function bootTerminal(): void {
     },
   });
 
-  xterm.onData((data) => client.sendStdin(data));
+  // IME composition handling — without this, typing pinyin/kana/hangul on
+  // iOS Safari (and on desktop browsers too) sends the intermediate latin
+  // keys to the PTY as you type, breaking candidate selection. Hook the
+  // hidden textarea that xterm renders inside #xterm: while composition is
+  // active, swallow xterm.onData; on compositionend, send the final composed
+  // text ourselves and de-dupe the trailing onData that some browsers emit.
+  let composing = false;
+  let suppressNext: string | null = null;
+  const xtermTextarea = $('#xterm').querySelector('textarea');
+  if (xtermTextarea) {
+    xtermTextarea.addEventListener('compositionstart', () => {
+      composing = true;
+    });
+    xtermTextarea.addEventListener('compositionend', (e) => {
+      composing = false;
+      const composed = (e as CompositionEvent).data;
+      if (composed) {
+        client.sendStdin(composed);
+        suppressNext = composed;
+        setTimeout(() => {
+          suppressNext = null;
+        }, 50);
+      }
+    });
+  }
+
+  xterm.onData((data) => {
+    if (composing) return;
+    if (suppressNext !== null && data === suppressNext) {
+      suppressNext = null;
+      return;
+    }
+    client.sendStdin(data);
+  });
 
   let resizeTimer: ReturnType<typeof setTimeout> | null = null;
   const sendResize = () => {
