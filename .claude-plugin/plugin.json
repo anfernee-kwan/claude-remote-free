@@ -1,0 +1,12 @@
+{
+  "name": "claude-remote-free",
+  "version": "0.1.0",
+  "description": "Remote browser access to your local Claude Code CLI session. Provider-agnostic (Anthropic / Bedrock / Vertex / any OpenAI-compatible proxy).",
+  "homepage": "https://github.com/anfernee-kwan/claude-remote-free",
+  "license": "MIT",
+  "commands": [
+    "./commands/remote-start.md",
+    "./commands/remote-stop.md",
+    "./commands/remote-status.md"
+  ]
+}

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="color-scheme" content="dark">
+<title>claude-remote-free</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div id="login" class="hidden">
+  <form id="login-form">
+    <h1>claude-remote-free</h1>
+    <input id="token" type="password" autocomplete="off" placeholder="token" autofocus>
+    <button type="submit">log in</button>
+    <p id="login-msg"></p>
+  </form>
+</div>
+
+<div id="terminal" class="hidden">
+  <div id="bar">
+    <span id="status">connecting</span>
+    <button id="logout" type="button">logout</button>
+  </div>
+  <div id="xterm"></div>
+  <div id="keybar">
+    <button data-key="Escape">Esc</button>
+    <button data-key="Tab">Tab</button>
+    <button data-key="Ctrl" id="kb-ctrl">Ctrl</button>
+    <button data-key="ArrowUp">&uarr;</button>
+    <button data-key="ArrowDown">&darr;</button>
+    <button data-key="ArrowLeft">&larr;</button>
+    <button data-key="ArrowRight">&rarr;</button>
+    <button data-key="C-c">^C</button>
+    <button data-key="C-d">^D</button>
+    <button data-key="C-l">^L</button>
+  </div>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
