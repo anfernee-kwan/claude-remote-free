@@ -78,8 +78,6 @@ function bootTerminal(): void {
   const client = new WsClient({
     url: wsUrl,
     onStdout: (bytes) => {
-      // Note: passing a Uint8Array is supported by xterm via the SDK; falling
-      // back to string for environments where it isn't.
       xterm.write(decoder.decode(bytes));
     },
     onJson: (msg) => {
@@ -92,12 +90,18 @@ function bootTerminal(): void {
     onState: (s) => {
       status.textContent = stateLabel(s);
       status.style.color = s === 'open' ? 'var(--accent)' : '#e88';
+      // Send the current xterm geometry every time we (re)connect; the server
+      // keeps the PTY across reconnects but the client may have resized in the
+      // interim, and there's no setTimeout fudge that's both fast enough on
+      // localhost and reliable enough on a slow tunnel.
+      if (s === 'open' && xterm.cols && xterm.rows) {
+        client.sendResize(xterm.cols, xterm.rows);
+      }
     },
   });
 
   xterm.onData((data) => client.sendStdin(data));
 
-  // Resize: debounce so we don't spam the daemon during a drag.
   let resizeTimer: ReturnType<typeof setTimeout> | null = null;
   const sendResize = () => {
     fit.fit();
@@ -108,13 +112,6 @@ function bootTerminal(): void {
     resizeTimer = setTimeout(sendResize, 100);
   };
   window.addEventListener('resize', debouncedResize);
-  // Also send an initial resize once the WS is open.
-  const initialResize = () => {
-    if (xterm.cols && xterm.rows) {
-      client.sendResize(xterm.cols, xterm.rows);
-    }
-  };
-  setTimeout(initialResize, 50);
 
   // Paste: send the whole clipboard at once instead of letting the terminal
   // synthesise per-char events.

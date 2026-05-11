@@ -39,6 +39,16 @@ export function createFreshSource(opts: FreshOpts): PtySource {
         // already dead
       }
     },
+    pause() {
+      try {
+        term.pause();
+      } catch {}
+    },
+    resume() {
+      try {
+        term.resume();
+      } catch {}
+    },
     onData(cb) {
       dataCbs.push(cb);
     },

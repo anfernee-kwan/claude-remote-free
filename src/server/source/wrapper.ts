@@ -114,6 +114,18 @@ export function createWrapperSource(opts: WrapperOpts): PtySource {
         socket?.end();
       } catch {}
     },
+    pause() {
+      // Stop reading the unix socket; the attach process will buffer in the
+      // kernel until we resume.
+      try {
+        socket?.pause();
+      } catch {}
+    },
+    resume() {
+      try {
+        socket?.resume();
+      } catch {}
+    },
     onData(cb) {
       dataCbs.push(cb);
     },

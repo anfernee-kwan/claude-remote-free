@@ -30,8 +30,8 @@ npm link        # exposes `claude-remote-free` on your PATH
 
 ### Supported Node versions
 
-- **Node 20 LTS, 22 LTS, 24 Current**: prebuilt `node-pty` binaries work out of the box.
-- **Node 25+**: `node-pty@1.1.0`'s prebuilt `.node` files were compiled against older Node ABIs. The native module will load but call `forkpty(3)` with a layout the new ABI doesn't honor, surfacing as `posix_spawnp failed` once the daemon starts. Rebuild from source after `npm install`:
+- **Node 20 / 22 / 24 (all LTS)**: prebuilt `node-pty` binaries work out of the box.
+- **Node 25+ (Current)**: `node-pty@1.1.0`'s prebuilt `.node` files were compiled against older Node ABIs. The native module will load but call `forkpty(3)` with a layout the new ABI doesn't honor, surfacing as `posix_spawnp failed` once the daemon starts. Rebuild from source after `npm install`:
 
   ```bash
   npm run rebuild-pty   # delegates to: cd node_modules/node-pty && npx node-gyp rebuild
