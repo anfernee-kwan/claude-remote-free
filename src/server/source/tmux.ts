@@ -45,6 +45,16 @@ export function createTmuxSource(opts: TmuxOpts): PtySource {
         } catch {}
       }, 200);
     },
+    pause() {
+      try {
+        term.pause();
+      } catch {}
+    },
+    resume() {
+      try {
+        term.resume();
+      } catch {}
+    },
     onData(cb) {
       dataCbs.push(cb);
     },

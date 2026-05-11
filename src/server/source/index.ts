@@ -3,6 +3,13 @@ export interface PtySource {
   write(data: string): void;
   resize(cols: number, rows: number): void;
   close(): void;
+  // Backpressure: when the downstream (WS clients) can't drain fast enough,
+  // the ws layer calls pause() and pairs it with resume() once headroom
+  // returns. Sources that can't actually pause (e.g. a remote socket) may
+  // implement these as no-ops; the worst case is OS-buffered growth, which
+  // is bounded.
+  pause(): void;
+  resume(): void;
   onData(cb: (data: string) => void): void;
   onExit(cb: (code: number, signal?: number) => void): void;
 }

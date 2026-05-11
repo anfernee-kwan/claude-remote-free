@@ -1,6 +1,6 @@
 ---
 description: Start the claude-remote-free daemon so you can reach Claude Code from a browser.
-allowed-tools: Bash(npx claude-remote-free start*), Bash(claude-remote-free start*)
+allowed-tools: Bash(claude-remote-free start*), Bash(node bin/claude-remote-free.js start*)
 ---
 
 Start the remote-browser daemon for the current machine.
@@ -14,8 +14,16 @@ If the user wants the browser to mirror the *current* local session, point them 
 Default invocation:
 
 ```bash
-npx -y claude-remote-free start --detach
+claude-remote-free start --detach
 ```
+
+If the user installed from source without `npm link`, fall back to:
+
+```bash
+node /path/to/claude-remote-free/bin/claude-remote-free.js start --detach
+```
+
+(Once the package is published to npm, `npx -y claude-remote-free start --detach` will also work.)
 
 After it starts, print:
 - the URL it's listening on (default http://127.0.0.1:7878)

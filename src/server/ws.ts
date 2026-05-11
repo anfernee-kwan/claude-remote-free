@@ -20,7 +20,12 @@ const TYPE_STDIN = 0x01;
 const TYPE_JSON = 0x02;
 
 const REPLAY_BUFFER_BYTES = 64 * 1024;
-const BACKPRESSURE_THRESHOLD = 4 * 1024 * 1024; // pause PTY if WS buffer > 4 MB
+// Pause PTY when total bytes buffered across all WS clients exceeds the high
+// watermark; resume when it drops below the low watermark. Hysteresis avoids
+// flapping when buffers oscillate just at the threshold.
+const BACKPRESSURE_HIGH = 4 * 1024 * 1024;
+const BACKPRESSURE_LOW = 1 * 1024 * 1024;
+const BACKPRESSURE_POLL_MS = 100;
 
 export interface WsServerOpts {
   httpServer: HttpServer;
@@ -34,6 +39,29 @@ export function attachWsServer(opts: WsServerOpts): { close(): void } {
   const replay = new RingBuffer(REPLAY_BUFFER_BYTES);
   const clients = new Set<WebSocket>();
   let exitInfo: { code: number; signal?: number } | null = null;
+  let paused = false;
+
+  function totalBuffered(): number {
+    let total = 0;
+    for (const ws of clients) total += ws.bufferedAmount;
+    return total;
+  }
+
+  function checkBackpressure(): void {
+    const total = totalBuffered();
+    if (!paused && total > BACKPRESSURE_HIGH) {
+      paused = true;
+      opts.source.pause();
+    } else if (paused && total < BACKPRESSURE_LOW) {
+      paused = false;
+      opts.source.resume();
+    }
+  }
+
+  // Poll periodically so we resume promptly once buffers drain even if no new
+  // input arrives. Cleared in close().
+  const backpressureTimer = setInterval(checkBackpressure, BACKPRESSURE_POLL_MS);
+  backpressureTimer.unref();
 
   // Buffer PTY output. Every byte produced goes into the replay buffer (so a
   // reconnecting client can catch up) and gets broadcast to all live clients.
@@ -44,6 +72,7 @@ export function attachWsServer(opts: WsServerOpts): { close(): void } {
     for (const ws of clients) {
       if (ws.readyState === WebSocket.OPEN) ws.send(frame);
     }
+    checkBackpressure();
   });
 
   opts.source.onExit((code, signal) => {
@@ -122,6 +151,7 @@ export function attachWsServer(opts: WsServerOpts): { close(): void } {
 
   return {
     close() {
+      clearInterval(backpressureTimer);
       for (const ws of clients) {
         try {
           ws.close();
@@ -131,15 +161,6 @@ export function attachWsServer(opts: WsServerOpts): { close(): void } {
     },
   };
 }
-
-// Backpressure helper: callers can poll this to decide whether to throttle.
-export function aggregateBufferedAmount(clients: Iterable<WebSocket>): number {
-  let total = 0;
-  for (const ws of clients) total += ws.bufferedAmount;
-  return total;
-}
-
-export { BACKPRESSURE_THRESHOLD };
 
 // Simple byte ring buffer for replay. Keeps the most recent N bytes.
 class RingBuffer {

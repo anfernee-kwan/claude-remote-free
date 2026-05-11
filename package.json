@@ -20,10 +20,11 @@
     "build:server": "tsc -p tsconfig.json",
     "build:web": "node scripts/build-web.js",
     "build": "npm run build:server && npm run build:web",
+    "rebuild-pty": "cd node_modules/node-pty && npx node-gyp rebuild",
     "start": "node bin/claude-remote-free.js"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20 <25"
   },
   "dependencies": {
     "node-pty": "^1.0.0",
