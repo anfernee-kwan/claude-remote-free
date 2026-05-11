@@ -1,0 +1,40 @@
+{
+  "name": "claude-remote-free",
+  "version": "0.1.0",
+  "description": "Remote browser access to your local Claude Code CLI session",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "claude-remote-free": "bin/claude-remote-free.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "web/dist",
+    ".claude-plugin",
+    "commands",
+    "README.md",
+    "SECURITY.md"
+  ],
+  "scripts": {
+    "build:server": "tsc -p tsconfig.json",
+    "build:web": "node scripts/build-web.js",
+    "build": "npm run build:server && npm run build:web",
+    "start": "node bin/claude-remote-free.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "node-pty": "^1.0.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/ws": "^8.5.10",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0",
+    "xterm": "^5.3.0",
+    "@xterm/addon-fit": "^0.10.0"
+  }
+}
